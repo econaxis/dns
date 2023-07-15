@@ -2,20 +2,17 @@
 #![feature(async_closure)]
 #![feature(str_split_whitespace_remainder)]
 
-use tokio::task::spawn_blocking;
 
 use tokio::join;
 
 mod records;
 mod default_records;
 
-extern crate core;
 
 mod dns;
 mod utils;
 mod servers;
 
-use tokio::net::{TcpListener, UdpSocket};
 use servers::tcp::TcpServer;
 use servers::udp::UdpServer;
 

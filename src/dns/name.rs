@@ -178,7 +178,7 @@ fn test_root_domain() {
 
 
 #[derive(Debug, PartialEq, DekuRead, DekuWrite)]
-#[deku(ctx = "endian: Endian")]
+#[deku(ctx = "_endian: Endian")]
 struct RegularMsg1<'a> {
     length: u8,
     #[deku(count = "length")]
