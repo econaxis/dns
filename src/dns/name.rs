@@ -100,7 +100,7 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
             msg.write(output, ())?;
         }
 
-        if self.0.last().map(|a| a.len() != 0).unwrap_or(true) {
+        if self.0.last().map(|a| !a.is_empty()).unwrap_or(true) {
             output.write(&[0]).unwrap();
         }
 
@@ -112,13 +112,13 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
 }
 
 impl<'a> DekuRead<'a, DNSNameCtx> for DNSName {
-    fn read(input: &'a BitSlice<u8, Msb0>, ctx: DNSNameCtx) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError> where Self: Sized {
+    fn read(input: &'a BitSlice<u8, Msb0>, _ctx: DNSNameCtx) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError> where Self: Sized {
         Self::read(input, ())
     }
 }
 
 impl<'a> DekuRead<'a, ()> for DNSName {
-    fn read(mut input: &'a BitSlice<u8, Msb0>, ctx: ()) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError> where Self: Sized {
+    fn read(mut input: &'a BitSlice<u8, Msb0>, _ctx: ()) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError> where Self: Sized {
         let mut pointer_chase_limit: i32 = 10;
         let mut decoded = Vec::new();
         loop {
@@ -131,7 +131,7 @@ impl<'a> DekuRead<'a, ()> for DNSName {
 
             match label {
                 Label::Regular(inner) => {
-                    if (inner.length == 0) {
+                    if inner.length == 0 {
                         break;
                     }
                     let label = String::from_utf8(inner.content.to_vec()).unwrap();
@@ -150,7 +150,7 @@ impl<'a> DekuRead<'a, ()> for DNSName {
             }
         }
 
-        return Ok((input, DNSName(decoded)));
+        Ok((input, DNSName(decoded)))
     }
 }
 

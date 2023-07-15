@@ -106,7 +106,7 @@ impl DNSHeader {
             updated = true;
         }
 
-        return updated;
+        updated
     }
 
     pub(crate) fn message_len_offset(&self) -> usize {

@@ -27,7 +27,7 @@ impl FromIterator<DNSRecord> for Records {
 
 impl Records {
     pub fn predefined() -> Self {
-        Self::from_iter(DEFAULT_RECORDS.into_iter().cloned().map(DNSRecord::try_from).map(Result::unwrap))
+        Self::from_iter(DEFAULT_RECORDS.iter().cloned().map(DNSRecord::try_from).map(Result::unwrap))
     }
     fn map_matching<'a>(&'a self, name: &'a DNSName) -> impl Iterator<Item = (&'a DNSRecord, NameCmp)> {
         self.inner.iter().filter_map(move |p| match p.name.cmp(name) {

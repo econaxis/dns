@@ -1,4 +1,4 @@
-use deku::bitvec::{BitSlice, BitVec, Msb0};
+use deku::bitvec::{BitSlice, BitVec};
 use deku::{DekuRead, DekuWrite};
 use std::future::Future;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     for byte in data {
         print!("{:2x} ", byte);
     }
-    print!("\n");
+    println!();
     let dns_question = match Question::read(bitslice, tcp) {
         Ok((_, dns_question)) => dns_question,
         Err(err) => {
@@ -33,7 +33,7 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
 
     println!("{:?}", dns_question);
 
-    let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question.clone(), records, tcp);
+    let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question, records, tcp);
 
     let mut bitvec = BitVec::new();
     response.write(&mut bitvec, tcp).unwrap();
@@ -66,8 +66,8 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     waste_thread();
 
 
-    let response = bv_to_vec(bitvec);
-    return response;
+    
+    bv_to_vec(bitvec)
 }
 
 pub async fn handle_dns_packet<F: FnOnce(Vec<u8>) -> T + 'static, T: Future<Output=std::io::Result<()>> + 'static>(records: Arc<Records>, data: Vec<u8>, tcp: bool, send_callback: F) -> std::io::Result<()> {

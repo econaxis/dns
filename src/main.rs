@@ -15,7 +15,7 @@ use servers::udp::UdpServer;
 
 
 async fn server() -> Result<(), Box<dyn Error>> {
-    const DNSADDR: &'static str = "0.0.0.0:53";
+    const DNSADDR: &str = "0.0.0.0:53";
 
     let server = UdpServer::new(DNSADDR).await?;
     let server1 = TcpServer::new(DNSADDR).await?;

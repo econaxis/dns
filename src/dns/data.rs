@@ -26,7 +26,7 @@ impl DekuWrite<DNSNameCtxRtype> for RData {
         let mut output_data = BitVec::new();
         match self {
             RData::Vec(vec) => {
-                vec.write(&mut output_data, ctx.0.clone())?;
+                vec.write(&mut output_data, ctx.0)?;
             }
             RData::Name(name) => {
                 name.write(&mut output_data, ctx.clone())?;

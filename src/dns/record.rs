@@ -29,12 +29,12 @@ pub struct DNSRecord {
 
 impl DekuWrite<CompressedRef> for DNSRecord {
     fn write(&self, output: &mut BitVec<u8, Msb0>, ctx: CompressedRef) -> Result<(), DekuError> {
-        let ctx1 = (Endian::Big, output.len(), ctx.clone(), self.rtype.clone());
+        let ctx1 = (Endian::Big, output.len(), ctx, self.rtype);
         self.name.write(output, ctx1.clone())?;
-        self.rtype.write(output, ctx1.0.clone())?;
+        self.rtype.write(output, ctx1.0)?;
         self.class.write(output, ctx1.0)?;
         self.ttl.write(output, ctx1.0)?;
-        self.rdata.write(output, ctx1.clone())?;
+        self.rdata.write(output, ctx1)?;
         Ok(())
     }
 }
@@ -109,7 +109,7 @@ impl<'a> DekuRead<'a, (CompressedRef, u16)> for VecDNSRecord {
         let mut records = Vec::new();
         let mut input = input;
         for _ in 0..ctx.1 {
-            let (i, record) = DNSRecord::read(input, (ctx.0.clone()))?;
+            let (i, record) = DNSRecord::read(input, ctx.0.clone())?;
             input = i;
             records.push(record);
         }

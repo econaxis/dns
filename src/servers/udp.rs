@@ -19,7 +19,7 @@ impl UdpServer {
         let records = Arc::new(Records::predefined());
 
         loop {
-            let (mut size, addr) = self.socket.recv_from(&mut buf).await?;
+            let (size, addr) = self.socket.recv_from(&mut buf).await?;
             let socket = self.socket.clone();
             let records = records.clone();
             tokio::spawn(async move {

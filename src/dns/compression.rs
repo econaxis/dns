@@ -1,5 +1,5 @@
-use std::cell::{Ref, RefCell};
-use std::sync::{Arc, RwLock};
+use std::cell::{RefCell};
+use std::sync::{Arc};
 use std::ops::Deref;
 use std::collections::HashMap;
 use crate::dns::name::DNSName;
@@ -32,8 +32,8 @@ pub struct Compressed {
 }
 
 impl PartialEq for Compressed {
-    fn eq(&self, other: &Self) -> bool {
-        return false;
+    fn eq(&self, _other: &Self) -> bool {
+        false
     }
 }
 
@@ -55,6 +55,6 @@ impl Compressed {
     pub(crate) fn query(&self, name: &DNSName, offset: usize) -> Option<usize> {
         let name1 = &name[offset..];
         let pointers = self.pointers.borrow();
-        pointers.get(name1).map(|x| *x)
+        pointers.get(name1).copied()
     }
 }
