@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use tokio::net::UdpSocket;
-use crate::records::Records;
+use crate::nameserver::records::Records;
 
 pub struct UdpServer {
     socket: Arc<UdpSocket>,
 }
 
 impl UdpServer {
-    pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let socket = Arc::new(UdpSocket::bind("0.0.0.0:53").await?);
+    pub async fn new(addr: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let socket = Arc::new(UdpSocket::bind(addr).await?);
         Ok(Self { socket })
     }
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -21,10 +21,13 @@ impl UdpServer {
         loop {
             let (mut size, addr) = self.socket.recv_from(&mut buf).await?;
             let socket = self.socket.clone();
-            let response = crate::servers::shared::handle_dns_packet(records.clone(), buf[..size].to_vec(), false, async move |bytes| {
-                socket.send_to(&bytes, addr).await?;
-                Ok(())
-            }).await;
+            let records = records.clone();
+            tokio::spawn(async move {
+                crate::servers::shared::handle_dns_packet(records, buf[..size].to_vec(), false, async move |bytes| {
+                    socket.send_to(&bytes, addr).await?;
+                    Ok(())
+                }).await.unwrap();
+            });
         }
     }
 }

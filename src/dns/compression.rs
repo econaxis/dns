@@ -1,3 +1,4 @@
+use std::cell::{Ref, RefCell};
 use std::sync::{Arc, RwLock};
 use std::ops::Deref;
 use std::collections::HashMap;
@@ -9,7 +10,7 @@ pub struct CompressedRef(Arc<Compressed>);
 impl CompressedRef {
     pub(crate) fn new(is_tcp: bool) -> Self {
         CompressedRef(Arc::new(Compressed {
-            pointers: RwLock::new(HashMap::new()),
+            pointers: RefCell::new(HashMap::new()),
             is_tcp,
         }))
     }
@@ -26,7 +27,7 @@ impl Deref for CompressedRef {
 
 #[derive(Debug)]
 pub struct Compressed {
-    pub(crate) pointers: RwLock<HashMap<DNSName, usize>>,
+    pub(crate) pointers: RefCell<HashMap<DNSName, usize>>,
     is_tcp: bool,
 }
 
@@ -38,18 +39,22 @@ impl PartialEq for Compressed {
 
 
 impl Compressed {
+    pub fn clear(&self) {
+        let mut pointers = self.pointers.borrow_mut();
+        pointers.clear();
+    }
     pub(crate) fn add(&self, name: DNSName, mut offset: usize) {
         if self.is_tcp {
             offset -= 2;
         }
         let offset = 0xC000 | offset;
-        let mut pointers = self.pointers.write().unwrap();
+        let mut pointers = self.pointers.borrow_mut();
         pointers.insert(name, offset);
     }
 
     pub(crate) fn query(&self, name: &DNSName, offset: usize) -> Option<usize> {
         let name1 = &name[offset..];
-        let pointers = self.pointers.read().unwrap();
+        let pointers = self.pointers.borrow();
         pointers.get(name1).map(|x| *x)
     }
 }

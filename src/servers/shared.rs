@@ -5,10 +5,17 @@ use std::sync::Arc;
 use tokio::task::spawn_blocking;
 use crate::dns::question::Question;
 use crate::dns::response::Response;
-use crate::records::Records;
+use crate::nameserver::records::Records;
 use crate::utils::bv_to_vec;
 
-pub fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
+fn waste_thread() {
+    let mut string = String::new();
+    for a in 0..10000 {
+        string.push_str(format!("123 4 5 {}", a * 10).as_str());
+    }
+}
+
+fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     // Parse the DNS question from the packet
     let bitslice = BitSlice::from_slice(data);
 
@@ -26,7 +33,6 @@ pub fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> 
 
     println!("{:?}", dns_question);
 
-
     let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question.clone(), records, tcp);
 
     let mut bitvec = BitVec::new();
@@ -34,7 +40,6 @@ pub fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> 
 
 
     let total_len = (bitvec.as_raw_slice().len() - response.header.message_len_offset()) as u16;
-    println!("Total len: {}", total_len);
     let updated = response.header.update_from_total_msg_len(total_len);
 
     if updated && response.header.tc > 0 {
@@ -58,14 +63,10 @@ pub fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> 
         }
     }
 
+    waste_thread();
+
 
     let response = bv_to_vec(bitvec);
-    println!("Response: {} {:?}", response.len(), response);
-    for byte in &response {
-        print!("{:2x} ", byte);
-    }
-    print!("\n");
-
     return response;
 }
 

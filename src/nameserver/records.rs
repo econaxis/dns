@@ -1,7 +1,7 @@
 use crate::dns::record::DNSRecord;
-use crate::default_records::DEFAULT_RECORDS;
 use crate::dns::name::{DNSName, NameCmp};
-use crate::dns::rtypes::Class;
+use crate::dns::rtypes::RType;
+use crate::nameserver::default_records::DEFAULT_RECORDS;
 
 #[derive(Default, Debug, Clone)]
 pub struct Records {
@@ -27,7 +27,7 @@ impl FromIterator<DNSRecord> for Records {
 
 impl Records {
     pub fn predefined() -> Self {
-        Self::from_iter(DEFAULT_RECORDS.into_iter().cloned().map(DNSRecord::from))
+        Self::from_iter(DEFAULT_RECORDS.into_iter().cloned().map(DNSRecord::try_from).map(Result::unwrap))
     }
     fn map_matching<'a>(&'a self, name: &'a DNSName) -> impl Iterator<Item = (&'a DNSRecord, NameCmp)> {
         self.inner.iter().filter_map(move |p| match p.name.cmp(name) {
@@ -36,17 +36,26 @@ impl Records {
         })
     }
 
-    pub fn query<'a>(&'a self, name: &'a DNSName) -> impl Iterator<Item=RecordItem<'a>> {
-        self.map_matching(name).filter_map(|(record, cmp)|{
+    pub fn query<'a: 'b, 'b>(&'a self, name: &'a DNSName, qtype: &'b RType) -> impl Iterator<Item=RecordItem<'a>> + 'b {
+        self.map_matching(name).filter_map(move |(record, cmp)|{
             match cmp {
-                NameCmp::Equal | NameCmp::Subdomain | NameCmp::Superdomain if record.rtype == Class::NS => Some(RecordItem {
+                NameCmp::Equal | NameCmp::Subdomain | NameCmp::Superdomain if record.rtype == RType::NS => Some(RecordItem {
                     record, section: ResponseSection::Authority
                 }),
                 // We have record = NS example.com and name = www3.example.com
                 // cmp returns subdomain
-                NameCmp::Equal => Some(RecordItem {
-                    record, section: ResponseSection::Answer
-                }),
+                NameCmp::Equal => {
+                    if qtype == &record.rtype {
+                        Some(RecordItem {
+                            record, section: ResponseSection::Answer
+                        })
+                    } else {
+                        // Put everything else in Additional just for fun
+                        Some(RecordItem {
+                            record, section: ResponseSection::Additional
+                        })
+                    }
+                },
                 _ => None,
             }
         })
@@ -56,7 +65,7 @@ impl Records {
         // Do it if there was an NS record in the authority section
         self.map_matching(addl_name).filter_map(|(record, cmp)|{
             match cmp {
-                NameCmp::Equal | NameCmp::Subdomain if record.rtype == Class::A => Some(RecordItem {
+                NameCmp::Equal | NameCmp::Subdomain if record.rtype == RType::A => Some(RecordItem {
                     record, section: ResponseSection::Additional
                 }),
                 _ => None,

@@ -5,7 +5,7 @@ use crate::dns::compression::CompressedRef;
 use crate::dns::header::DNSHeader;
 use crate::dns::name::DNSName;
 use crate::dns::record::VecDNSRecord;
-use crate::dns::rtypes::Class;
+use crate::dns::rtypes::RType;
 
 #[derive(Debug, PartialEq, Eq, DekuRead, DekuWrite, Clone)]
 #[deku(endian = "big", ctx = "compressed: CompressedRef")]
@@ -13,7 +13,7 @@ pub struct DNSQuestion {
     #[deku(reader = "DNSName::read(deku::input_bits, (Endian::Big, deku::byte_offset, compressed))")]
     #[deku(writer = "DNSName::write(&self.qname, deku::output, (Endian::Big, deku::byte_offset, compressed, self.qtype))")]
     pub(crate) qname: DNSName,
-    qtype: Class,
+    pub(crate) qtype: RType,
     #[deku(bits = "16")]
     qclass: u16,
 }

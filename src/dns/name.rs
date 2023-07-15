@@ -5,7 +5,7 @@ use std::borrow::Borrow;
 use std::ops::Deref;
 use std::io::Write;
 use crate::dns::compression::CompressedRef;
-use crate::dns::rtypes::Class;
+use crate::dns::rtypes::RType;
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct DNSName(Vec<String>);
@@ -79,12 +79,10 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
     fn write(&self, output: &mut BitVec<u8, Msb0>, ctx: DNSNameCtxRtype) -> Result<(), DekuError> {
         println!("Writing DNS name {:?} {}", self.0, ctx.1);
 
-        let mut total_msg_len = 0;
 
         for (index, label) in self.0.iter().enumerate() {
             let label_bytes = label.as_bytes();
             let label_len = label_bytes.len() as u8;
-            total_msg_len += 1 + label_len as usize;
 
 
             if ctx.3.supports_compression() {
@@ -195,4 +193,4 @@ enum Label<'a> {
 }
 
 type DNSNameCtx = (Endian, usize, CompressedRef);
-pub type DNSNameCtxRtype = (Endian, usize, CompressedRef, Class);
+pub type DNSNameCtxRtype = (Endian, usize, CompressedRef, RType);
