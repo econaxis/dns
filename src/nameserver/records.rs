@@ -27,13 +27,13 @@ impl FromIterator<DNSRecord> for Records {
 
 impl Records {
     pub fn predefined() -> Self {
-        Self::from_iter(DEFAULT_RECORDS.iter().cloned().map(DNSRecord::try_from).map(Result::unwrap))
+    DEFAULT_RECORDS.iter().copied().map(DNSRecord::try_from).map(Result::unwrap).collect()
     }
     fn map_matching<'a>(&'a self, name: &'a DNSName) -> impl Iterator<Item = (&'a DNSRecord, NameCmp)> {
         self.inner.iter().filter_map(move |p| {
             println!("Comparing {:?} <-> {:?}: {:?}", p.name, name, p.name.cmp(name));
             match p.name.cmp(name) {
-                x @ NameCmp::Equal | x@ NameCmp::Subdomain | x@NameCmp::Superdomain=> Some((p, x)),
+                x @ (NameCmp::Equal | NameCmp::Subdomain | NameCmp::Superdomain)=> Some((p, x)),
                 _ => None,
             }
         })

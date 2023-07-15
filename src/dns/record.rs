@@ -23,7 +23,7 @@ pub struct DNSRecord {
     ttl: u32,
 
     #[deku(ctx = "deku::byte_offset, compressed.clone()")]
-    #[deku(reader = "RData::read(deku::rest, ContainsIP::from_class(rtype))")]
+    #[deku(reader = "RData::read(deku::rest, ContainsIP::from_class(*rtype))")]
     pub(crate) rdata: RData,
 }
 

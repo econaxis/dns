@@ -8,7 +8,7 @@ pub enum ContainsIP {
 }
 
 impl ContainsIP {
-    pub fn from_class(c: &RType) -> Self {
+    pub fn from_class(c: RType) -> Self {
         match c {
             RType::A => ContainsIP::Yes,
             _ => ContainsIP::No
@@ -33,8 +33,8 @@ impl RType {
     pub(crate) fn supports_compression(&self) -> bool {
         match self {
             RType::CNAME => true,
-            RType::A => false,
             RType::NS => true,
+            RType::A => false,
             RType::OPT => false,
             RType::AAAA => false,
             RType::TXT => false,

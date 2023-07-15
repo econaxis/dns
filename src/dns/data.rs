@@ -3,6 +3,7 @@ use deku::bitvec::{BitSlice, BitVec, Msb0};
 use deku::ctx::Endian;
 use crate::dns::name::{DNSName, DNSNameCtxRtype};
 use crate::dns::rtypes::ContainsIP;
+use crate::nameserver::records::Records;
 use crate::utils::bv_to_vec;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -15,7 +16,7 @@ impl RData {
     pub fn try_get_name(&self) -> Option<&DNSName> {
         match self {
             RData::Name(name) => Some(name),
-            _ => None
+            RData::Vec(_) => None
         }
     }
 }
@@ -33,7 +34,7 @@ impl DekuWrite<DNSNameCtxRtype> for RData {
             }
         }
 
-        let bytes_written = (output_data.len() / 8) as u16;
+        let bytes_written = u16::try_from(output_data.len() / 8).unwrap();
         bytes_written.write(output, ctx.0)?;
 
         output.append(&mut output_data);

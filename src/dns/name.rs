@@ -102,7 +102,7 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
             msg.write(output, ())?;
         }
 
-        if self.0.last().map(|a| !a.is_empty()).unwrap_or(true) {
+        if self.0.last().map_or(true, |a| !a.is_empty()) {
             output.write_all(&[0]).unwrap();
         }
 

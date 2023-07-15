@@ -22,12 +22,12 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     let dns_question = match Question::read(bitslice, tcp) {
         Ok((_, dns_question)) => dns_question,
         Err(err) => {
-            eprintln!("Failed to parse DNS question: {:?}", err);
+            eprintln!("Failed to parse DNS question: {err:?}");
             return vec![];
         }
     };
 
-    println!("{:?}", dns_question);
+    println!("{dns_question:?}");
 
     let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question, records, tcp);
 
@@ -35,7 +35,7 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     response.write(&mut bitvec, tcp).unwrap();
 
 
-    let total_len = (bitvec.as_raw_slice().len() - response.header.message_len_offset()) as u16;
+    let total_len = (bitvec.as_raw_slice().len() - response.header.message_len_offset()).try_into().unwrap();
     let updated = response.header.update_from_total_msg_len(total_len);
 
     if updated && response.header.tc > 0 {
