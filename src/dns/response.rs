@@ -31,7 +31,7 @@ impl Response {
     pub(crate) fn clear(&self) {
         self.compress.clear();
     }
-    pub(crate) fn build_from_record_iter<'a>(id: u16, question: DNSQuestion, records: &Records, tcp: bool) -> Response {
+    pub(crate) fn build_from_record_iter(id: u16, question: DNSQuestion, records: &Records, tcp: bool) -> Response {
         let mut answer = Vec::new();
         let mut authority = Vec::new();
         let mut additional = Vec::new();

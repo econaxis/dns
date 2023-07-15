@@ -30,16 +30,20 @@ impl Records {
         Self::from_iter(DEFAULT_RECORDS.iter().cloned().map(DNSRecord::try_from).map(Result::unwrap))
     }
     fn map_matching<'a>(&'a self, name: &'a DNSName) -> impl Iterator<Item = (&'a DNSRecord, NameCmp)> {
-        self.inner.iter().filter_map(move |p| match p.name.cmp(name) {
-            x @ NameCmp::Equal | x@ NameCmp::Subdomain | x@NameCmp::Superdomain=> Some((p, x)),
-            _ => None,
+        self.inner.iter().filter_map(move |p| {
+            println!("Comparing {:?} <-> {:?}: {:?}", p.name, name, p.name.cmp(name));
+            match p.name.cmp(name) {
+                x @ NameCmp::Equal | x@ NameCmp::Subdomain | x@NameCmp::Superdomain=> Some((p, x)),
+                _ => None,
+            }
         })
     }
 
-    pub fn query<'a: 'b, 'b>(&'a self, name: &'a DNSName, qtype: &'b RType) -> impl Iterator<Item=RecordItem<'a>> + 'b {
+    pub fn query<'a>(&'a self, name: &'a DNSName, qtype: &'a RType) -> impl Iterator<Item=RecordItem<'a>> {
         self.map_matching(name).filter_map(move |(record, cmp)|{
+            println!("Matched: {:?} <-> {:?} -- {:?}", name, record, cmp);
             match cmp {
-                NameCmp::Equal | NameCmp::Subdomain | NameCmp::Superdomain if record.rtype == RType::NS => Some(RecordItem {
+                NameCmp::Equal | NameCmp::Subdomain if record.rtype == RType::NS => Some(RecordItem {
                     record, section: ResponseSection::Authority
                 }),
                 // We have record = NS example.com and name = www3.example.com
@@ -65,7 +69,7 @@ impl Records {
         // Do it if there was an NS record in the authority section
         self.map_matching(addl_name).filter_map(|(record, cmp)|{
             match cmp {
-                NameCmp::Equal | NameCmp::Subdomain if record.rtype == RType::A => Some(RecordItem {
+                NameCmp::Equal if record.rtype == RType::A => Some(RecordItem {
                     record, section: ResponseSection::Additional
                 }),
                 _ => None,

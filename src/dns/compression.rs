@@ -1,15 +1,15 @@
 use std::cell::{RefCell};
-use std::sync::{Arc};
 use std::ops::Deref;
 use std::collections::HashMap;
+use std::rc::Rc;
 use crate::dns::name::DNSName;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct CompressedRef(Arc<Compressed>);
+pub struct CompressedRef(Rc<Compressed>);
 
 impl CompressedRef {
     pub(crate) fn new(is_tcp: bool) -> Self {
-        CompressedRef(Arc::new(Compressed {
+        CompressedRef(Rc::new(Compressed {
             pointers: RefCell::new(HashMap::new()),
             is_tcp,
         }))

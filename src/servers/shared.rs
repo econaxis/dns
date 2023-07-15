@@ -19,10 +19,6 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     // Parse the DNS question from the packet
     let bitslice = BitSlice::from_slice(data);
 
-    for byte in data {
-        print!("{:2x} ", byte);
-    }
-    println!();
     let dns_question = match Question::read(bitslice, tcp) {
         Ok((_, dns_question)) => dns_question,
         Err(err) => {

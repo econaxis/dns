@@ -28,7 +28,9 @@ struct TcpHeaderField(Option<u16>);
 
 impl TcpHeaderField {
     fn set(&mut self, value: u16) {
-        self.0.as_mut().map(|a| *a = value);
+        if let Some(a) = self.0.as_mut() {
+            *a = value;
+        }
     }
     fn is_tcp(&self) -> bool {
         self.0.is_some()

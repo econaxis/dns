@@ -14,7 +14,7 @@ use crate::dns::rtypes::RType;
 #[derive(Debug, PartialEq, Eq, DekuRead, Clone)]
 #[deku(endian = "big", ctx = "compressed: CompressedRef")]
 pub struct DNSRecord {
-    #[deku(ctx = "deku::byte_offset, compressed.clone()")]
+    #[deku(ctx = "deku::byte_offset, compressed")]
     pub(crate) name: DNSName,
     pub(crate) rtype: RType,
     #[deku(bits = "16")]
@@ -95,7 +95,7 @@ impl Deref for VecDNSRecord {
     }
 }
 
-impl<'a> DekuWrite<(CompressedRef, u16)> for VecDNSRecord {
+impl DekuWrite<(CompressedRef, u16)> for VecDNSRecord {
     fn write(&self, output: &mut BitVec<u8, Msb0>, ctx: (CompressedRef, u16)) -> Result<(), DekuError> {
         for record in self.0.iter().take(ctx.1 as usize) {
             record.write(output, ctx.0.clone())?;

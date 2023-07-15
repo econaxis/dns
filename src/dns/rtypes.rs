@@ -19,6 +19,7 @@ impl ContainsIP {
 
 #[derive(Debug, PartialEq, Eq, DekuWrite, DekuRead, Clone, Copy)]
 #[deku(bits = "16", type = "u16", ctx = "endian: Endian", endian = "endian")]
+#[allow(clippy::upper_case_acronyms)]
 pub enum RType {
     CNAME = 5,
     A = 1,
