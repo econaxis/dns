@@ -1,27 +1,54 @@
-use deku::ctx::Endian;
-use deku::prelude::*;
+use deku::{ctx::Endian, prelude::*};
 
 use deku::bitvec::{BitSlice, BitVec, Msb0};
 
-pub fn response_header(id: u16, answers: usize, authorities: usize, additionals: usize, is_tcp: bool, truncated: bool) -> DNSHeader {
-    DNSHeader {
-        tcp_header_field: if is_tcp { TcpHeaderField(Some(0)) } else { TcpHeaderField(None) },
-        id,       // ID
-        qr: 1,            // Response (qr = 1)
-        opcode: 0,        // Standard query (opcode = 0)
-        aa: 1,            // Not authoritative (aa = 0)
-        tc: u8::from(truncated),            // Not truncated (tc = 0)
-        rd: 0,            // Recursion desired (rd = 0)
-        ra: 0,            // Recursion available (ra = 0)
-        z: 0,             // Reserved bits (z = 0)
-        rcode: 0,         // No error condition (rcode = 0)
-        qdcount: 1,       // Number of questions (qdcount = 0)
-        ancount: answers as u16,       // Number of answers (ancount = 1)
-        nscount: authorities as u16,       // Number of authority resource records (nscount = 0)
-        arcount: additionals as u16,       // Number of additional resource records (arcount = 0)
-    }
+#[derive(PartialEq, DekuRead, DekuWrite, Clone, Debug, Eq)]
+#[deku(bits = "4", type = "u8")]
+pub enum Rcode {
+    /*
+        DNS Return Code	DNS Return Message	Description
+    RCODE:0	NOERROR	DNS Query completed successfully
+    RCODE:1	FORMERR	DNS Query Format Error
+    RCODE:2	SERVFAIL	Server failed to complete the DNS request
+    RCODE:3	NXDOMAIN	Domain name does not exist
+    RCODE:4	NOTIMP	Function not implemented
+    RCODE:5	REFUSED	The server refused to answer for the query
+    RCODE:6	YXDOMAIN	Name that should not exist, does exist
+    RCODE:7	XRRSET	RRset that should not exist, does exist
+    RCODE:8	NOTAUTH	Server not authoritative for the zone
+    RCODE:9	NOTZONE
+    Name not in zone
+         */
+    NoError = 0,
+    FormatError = 1,
+    ServerFailure = 2,
+    NameError = 3,
+    NotImplemented = 4,
+    Refused = 5,
+    YXDomain = 6,
+    YXRRSet = 7,
+    NotAuth = 8,
+    NotZone = 9,
 }
 
+pub fn response_header(id: u16, answers: usize, authorities: usize, additionals: usize, is_tcp: bool, truncated: bool, rcode: Rcode) -> DNSHeader {
+    DNSHeader {
+        tcp_header_field: if is_tcp { TcpHeaderField(Some(0)) } else { TcpHeaderField(None) },
+        id,                          // ID
+        qr: 1,                       // Response (qr = 1)
+        opcode: 0,                   // Standard query (opcode = 0)
+        aa: 1,                       // Not authoritative (aa = 0)
+        tc: u8::from(truncated),     // Not truncated (tc = 0)
+        rd: 0,                       // Recursion desired (rd = 0)
+        ra: 0,                       // Recursion available (ra = 0)
+        z: 0,                        // Reserved bits (z = 0)
+        rcode,                       // No error condition (rcode = 0)
+        qdcount: 1,                  // Number of questions (qdcount = 0)
+        ancount: answers as u16,     // Number of answers (ancount = 1)
+        nscount: authorities as u16, // Number of authority resource records (nscount = 0)
+        arcount: additionals as u16, // Number of additional resource records (arcount = 0)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 struct TcpHeaderField(Option<u16>);
@@ -32,6 +59,7 @@ impl TcpHeaderField {
             *a = value;
         }
     }
+
     fn is_tcp(&self) -> bool {
         self.0.is_some()
     }
@@ -78,8 +106,8 @@ pub struct DNSHeader {
     ra: u8,
     #[deku(bits = "3")]
     z: u8,
-    #[deku(bits = "4")]
-    rcode: u8,
+    #[deku(endian = "")]
+    rcode: Rcode,
     #[deku(bits = "16")]
     qdcount: u16,
     #[deku(bits = "16")]

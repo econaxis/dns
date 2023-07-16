@@ -1,15 +1,16 @@
-use std::net::Ipv4Addr;
-use crate::dns::rtypes::ContainsIP;
-use deku::prelude::*;
-use deku::bitvec::{BitSlice, BitVec, Msb0};
-use deku::ctx::Endian;
-use std::str::FromStr;
-use std::ops::Deref;
+use crate::dns::{
+    compression::CompressedRef,
+    data::RData,
+    name::DNSName,
+    rtypes::{ContainsIP, RType},
+};
 use anyhow::{anyhow, Context};
-use crate::dns::compression::CompressedRef;
-use crate::dns::data::RData;
-use crate::dns::name::DNSName;
-use crate::dns::rtypes::RType;
+use deku::{
+    bitvec::{BitSlice, BitVec, Msb0},
+    ctx::Endian,
+    prelude::*,
+};
+use std::{net::Ipv4Addr, ops::Deref, str::FromStr};
 
 #[derive(Debug, PartialEq, Eq, DekuRead, Clone)]
 #[deku(endian = "big", ctx = "compressed: CompressedRef")]
@@ -22,8 +23,10 @@ pub struct DNSRecord {
     #[deku(bits = "32")]
     ttl: u32,
 
-    #[deku(ctx = "deku::byte_offset, compressed.clone()")]
-    #[deku(reader = "RData::read(deku::rest, ContainsIP::from_class(*rtype))")]
+    #[deku(
+        ctx = "deku::byte_offset, compressed.clone()",
+        reader = "RData::read(deku::rest, ContainsIP::from_class(*rtype))"
+    )]
     pub(crate) rdata: RData,
 }
 
@@ -44,12 +47,19 @@ impl<'a> TryFrom<&'a str> for DNSRecord {
     // www.example.com CNAME www.example.org
     // example.com A 10.10.10.10
     type Error = anyhow::Error;
+
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         let mut split = value.split_whitespace();
 
-        let name = split.next().with_context(|| anyhow!("'name' field doesn't exist for record '{}'", value))?;
-        let rtype = split.next().with_context(|| anyhow!("'rtype' field doesn't exist for record '{}'", value))?;
-        let rdata = split.remainder().with_context(|| anyhow!("'rdata' field doesn't exist for record '{}'", value))?;
+        let name = split
+            .next()
+            .with_context(|| anyhow!("'name' field doesn't exist for record '{}'", value))?;
+        let rtype = split
+            .next()
+            .with_context(|| anyhow!("'rtype' field doesn't exist for record '{}'", value))?;
+        let rdata = split
+            .remainder()
+            .with_context(|| anyhow!("'rdata' field doesn't exist for record '{}'", value))?;
 
         let name = DNSName::from_url(name);
         let rtype = RType::from_str(rtype).context("Invalid record type")?;
@@ -59,11 +69,10 @@ impl<'a> TryFrom<&'a str> for DNSRecord {
             name,
             rtype,
             class: 1,
-            ttl: 0,
+            ttl: 60,
             rdata,
         })
     }
-
 }
 
 fn parse_rdata_from_rtype(rdata: &str, rtype: RType) -> anyhow::Result<RData> {
@@ -71,11 +80,10 @@ fn parse_rdata_from_rtype(rdata: &str, rtype: RType) -> anyhow::Result<RData> {
         RType::CNAME | RType::NS => RData::Name(DNSName::from_url(rdata)),
         RType::TXT => RData::Name(DNSName::from_raw_string(rdata)),
         RType::A => RData::Vec(Ipv4Addr::from_str(rdata)?.octets().to_vec()),
-        _ => return Err(anyhow!("Unsupported record type"))
+        _ => return Err(anyhow!("Unsupported record type")),
     };
     Ok(rdata)
 }
-
 
 #[derive(Debug, PartialEq)]
 pub struct VecDNSRecord(Vec<DNSRecord>);
@@ -85,7 +93,6 @@ impl From<Vec<DNSRecord>> for VecDNSRecord {
         VecDNSRecord(vec)
     }
 }
-
 
 impl Deref for VecDNSRecord {
     type Target = Vec<DNSRecord>;

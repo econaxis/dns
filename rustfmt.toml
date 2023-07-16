@@ -1,0 +1,3 @@
+max_width=150
+imports_granularity="crate"
+reorder_impl_items=true

@@ -1,3 +1,3 @@
-pub(crate) mod udp;
-pub(crate) mod tcp;
 mod shared;
+pub(crate) mod tcp;
+pub(crate) mod udp;

@@ -2,17 +2,14 @@
 #![feature(async_closure)]
 #![feature(str_split_whitespace_remainder)]
 
-
 mod nameserver;
 
 mod dns;
-mod utils;
 mod servers;
+mod utils;
 
+use servers::{tcp::TcpServer, udp::UdpServer};
 use std::error::Error;
-use servers::tcp::TcpServer;
-use servers::udp::UdpServer;
-
 
 async fn server() -> Result<(), Box<dyn Error>> {
     const DNSADDR: &str = "0.0.0.0:53";
@@ -22,16 +19,12 @@ async fn server() -> Result<(), Box<dyn Error>> {
 
     let res = tokio::try_join!(server.run(), server1.run());
 
-
     println!("Server crashed: {:?}", res);
 
     Ok(())
 }
 
-
 #[tokio::main]
 async fn main() {
     server().await.unwrap();
 }
-
-

@@ -1,7 +1,9 @@
-use tokio::net::TcpListener;
-use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use crate::nameserver::records::Records;
+use std::sync::Arc;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpListener,
+};
 
 pub struct TcpServer {
     socket: TcpListener,
@@ -28,7 +30,9 @@ impl TcpServer {
                 crate::servers::shared::handle_dns_packet(records, buf[..size].to_vec(), true, async move |bytes| {
                     stream.write_all(&bytes).await?;
                     Ok(())
-                }).await.unwrap();
+                })
+                .await
+                .unwrap();
             });
         }
     }

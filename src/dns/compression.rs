@@ -1,8 +1,7 @@
-use std::cell::{RefCell};
-use std::ops::Deref;
-use std::collections::HashMap;
-use std::rc::Rc;
 use crate::dns::name::DNSName;
+use std::{cell::RefCell, collections::HashMap, ops::Deref, rc::Rc};
+
+const ENABLED: bool = false;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CompressedRef(Rc<Compressed>);
@@ -24,7 +23,6 @@ impl Deref for CompressedRef {
     }
 }
 
-
 #[derive(Debug)]
 pub struct Compressed {
     pub(crate) pointers: RefCell<HashMap<DNSName, usize>>,
@@ -37,13 +35,16 @@ impl PartialEq for Compressed {
     }
 }
 
-
 impl Compressed {
     pub fn clear(&self) {
         let mut pointers = self.pointers.borrow_mut();
         pointers.clear();
     }
+
     pub(crate) fn add(&self, name: DNSName, mut offset: usize) {
+        if !ENABLED {
+            return;
+        }
         if self.is_tcp {
             offset -= 2;
         }

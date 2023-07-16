@@ -1,19 +1,13 @@
-use deku::bitvec::{BitSlice, BitVec};
-use deku::{DekuRead, DekuWrite};
-use std::future::Future;
-use std::sync::Arc;
+use crate::{
+    dns::{header::Rcode, question::Question, response::Response, rtypes::RType},
+    nameserver::records::Records,
+    utils::bv_to_vec,
+};
+use deku::{
+    bitvec::{BitSlice, BitVec}, DekuRead, DekuWrite,
+};
+use std::{future::Future, sync::Arc};
 use tokio::task::spawn_blocking;
-use crate::dns::question::Question;
-use crate::dns::response::Response;
-use crate::nameserver::records::Records;
-use crate::utils::bv_to_vec;
-
-fn waste_thread() {
-    let mut string = String::new();
-    for a in 0..10000 {
-        string.push_str(format!("123 4 5 {}", a * 10).as_str());
-    }
-}
 
 fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
     // Parse the DNS question from the packet
@@ -27,13 +21,20 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
         }
     };
 
+    if matches!(dns_question.question.qtype, RType::Unknown(_)) {
+        eprintln!("Unknown qtype: {:?}", dns_question.question.qtype);
+        let response = Response::from_rcode(dns_question.header.id, dns_question.question, Rcode::NotImplemented, tcp);
+        let mut bitvec = BitVec::new();
+        response.write(&mut bitvec, tcp).unwrap();
+        return bv_to_vec(bitvec);
+    }
+
     println!("{dns_question:?}");
 
     let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question, records, tcp);
 
     let mut bitvec = BitVec::new();
     response.write(&mut bitvec, tcp).unwrap();
-
 
     let total_len = (bitvec.as_raw_slice().len() - response.header.message_len_offset()).try_into().unwrap();
     let updated = response.header.update_from_total_msg_len(total_len);
@@ -59,16 +60,15 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
         }
     }
 
-    waste_thread();
-
-
-    
     bv_to_vec(bitvec)
 }
 
-pub async fn handle_dns_packet<F: FnOnce(Vec<u8>) -> T + 'static, T: Future<Output=std::io::Result<()>> + 'static>(records: Arc<Records>, data: Vec<u8>, tcp: bool, send_callback: F) -> std::io::Result<()> {
-    let res = spawn_blocking(move || {
-        handle_dns_packet1(&records, &data, tcp)
-    }).await.unwrap();
+pub async fn handle_dns_packet<F: FnOnce(Vec<u8>) -> T, T: Future<Output = std::io::Result<()>>>(
+    records: Arc<Records>,
+    data: Vec<u8>,
+    tcp: bool,
+    send_callback: F,
+) -> std::io::Result<()> {
+    let res = spawn_blocking(move || handle_dns_packet1(&records, &data, tcp)).await.unwrap();
     send_callback(res).await
 }

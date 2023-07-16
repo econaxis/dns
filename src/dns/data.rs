@@ -1,10 +1,15 @@
-use deku::{DekuError, DekuRead, DekuWrite};
-use deku::bitvec::{BitSlice, BitVec, Msb0};
-use deku::ctx::Endian;
-use crate::dns::name::{DNSName, DNSNameCtxRtype};
-use crate::dns::rtypes::ContainsIP;
-use crate::nameserver::records::Records;
-use crate::utils::bv_to_vec;
+use crate::{
+    dns::{
+        name::{DNSName, DNSNameCtxRtype},
+        rtypes::ContainsIP,
+    },
+    utils::bv_to_vec,
+};
+use deku::{
+    bitvec::{BitSlice, BitVec, Msb0},
+    ctx::Endian,
+    DekuError, DekuRead, DekuWrite,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RData {
@@ -16,11 +21,10 @@ impl RData {
     pub fn try_get_name(&self) -> Option<&DNSName> {
         match self {
             RData::Name(name) => Some(name),
-            RData::Vec(_) => None
+            RData::Vec(_) => None,
         }
     }
 }
-
 
 impl DekuWrite<DNSNameCtxRtype> for RData {
     fn write(&self, output: &mut BitVec<u8, Msb0>, ctx: DNSNameCtxRtype) -> Result<(), DekuError> {
@@ -50,7 +54,7 @@ impl DekuRead<'_, ContainsIP> for RData {
 
         match ctx {
             ContainsIP::No => {
-                let (input, vec) = input.split_at(bytes_written);
+                let (input, vec) = input.split_at(bytes_written * 8);
                 let vec_u8 = bv_to_vec(vec.to_bitvec());
                 Ok((input, RData::Vec(vec_u8)))
             }

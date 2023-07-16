@@ -1,11 +1,9 @@
-use deku::ctx::Endian;
-use deku::prelude::*;
+use deku::{
+    ctx::Endian,
+    prelude::*,
+};
 
-use crate::dns::compression::CompressedRef;
-use crate::dns::header::DNSHeader;
-use crate::dns::name::DNSName;
-use crate::dns::record::VecDNSRecord;
-use crate::dns::rtypes::RType;
+use crate::dns::{compression::CompressedRef, header::DNSHeader, name::DNSName, record::VecDNSRecord, rtypes::RType};
 
 #[derive(Debug, PartialEq, Eq, DekuRead, DekuWrite, Clone)]
 #[deku(endian = "big", ctx = "compressed: CompressedRef")]
@@ -17,7 +15,6 @@ pub struct DNSQuestion {
     #[deku(bits = "16")]
     qclass: u16,
 }
-
 
 #[derive(Debug, PartialEq, DekuRead)]
 #[deku(ctx = "is_tcp: bool")]

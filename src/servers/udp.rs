@@ -1,6 +1,6 @@
+use crate::nameserver::records::Records;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
-use crate::nameserver::records::Records;
 
 pub struct UdpServer {
     socket: Arc<UdpSocket>,
@@ -11,6 +11,7 @@ impl UdpServer {
         let socket = Arc::new(UdpSocket::bind(addr).await?);
         Ok(Self { socket })
     }
+
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         println!("UDP DNS server listening on: {:?}", self.socket.local_addr());
 
@@ -26,7 +27,9 @@ impl UdpServer {
                 crate::servers::shared::handle_dns_packet(records, buf[..size].to_vec(), false, async move |bytes| {
                     socket.send_to(&bytes, addr).await?;
                     Ok(())
-                }).await.unwrap();
+                })
+                .await
+                .unwrap();
             });
         }
     }
