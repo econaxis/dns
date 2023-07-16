@@ -1,25 +1,23 @@
-use deku::prelude::*;
-use deku::ctx::Endian;
-use deku::bitvec::{BitSlice, BitVec, Msb0};
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::ops::Deref;
-use std::io::Write;
-use crate::dns::compression::CompressedRef;
-use crate::dns::rtypes::RType;
+use crate::dns::{compression::CompressedRef, rtypes::RType};
+use deku::{
+    bitvec::{BitSlice, BitVec, Msb0},
+    ctx::Endian,
+    prelude::*,
+};
+use std::{borrow::Borrow, cmp::Ordering, io::Write, ops::Deref};
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct DNSName(Vec<String>);
 
-
 impl DNSName {
     pub(crate) fn from_url(s: &str) -> Self {
-        let parts = s.split('.').filter_map(|a| {
-            match a.to_string() {
+        let parts = s
+            .split('.')
+            .filter_map(|a| match a.to_string() {
                 x if x.is_empty() => None,
-                x => Some(x)
-            }
-        }).collect();
+                x => Some(x),
+            })
+            .collect();
         DNSName(parts)
     }
 
@@ -33,6 +31,7 @@ impl DNSName {
         }
         DNSName(parts)
     }
+
     fn len(&self) -> usize {
         self.0.len()
     }
@@ -46,7 +45,7 @@ impl DNSName {
         let len = self.len().min(other.len());
         let mut i = 0;
         while i < len {
-            if self.getrev(i) != other.getrev(i) {
+            if !self.getrev(i).eq_ignore_ascii_case(other.getrev(i)) {
                 break;
             }
             i += 1;
@@ -61,9 +60,7 @@ impl DNSName {
             NameCmp::Different
         }
     }
-
 }
-
 
 impl Deref for DNSName {
     type Target = [String];
@@ -79,13 +76,11 @@ impl Borrow<[String]> for DNSName {
     }
 }
 
-
 impl DekuWrite<DNSNameCtxRtype> for DNSName {
     fn write(&self, output: &mut BitVec<u8, Msb0>, ctx: DNSNameCtxRtype) -> Result<(), DekuError> {
         for (index, label) in self.0.iter().enumerate() {
             let label_bytes = label.as_bytes();
             let label_len = label_bytes.len() as u8;
-
 
             if ctx.3.supports_compression() {
                 if let Some(ptrindex) = ctx.2.query(self, index) {
@@ -114,13 +109,19 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
 }
 
 impl<'a> DekuRead<'a, DNSNameCtx> for DNSName {
-    fn read(input: &'a BitSlice<u8, Msb0>, _ctx: DNSNameCtx) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError> where Self: Sized {
+    fn read(input: &'a BitSlice<u8, Msb0>, _ctx: DNSNameCtx) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError>
+    where
+        Self: Sized,
+    {
         Self::read(input, ())
     }
 }
 
 impl<'a> DekuRead<'a, ()> for DNSName {
-    fn read(mut input: &'a BitSlice<u8, Msb0>, _ctx: ()) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError> where Self: Sized {
+    fn read(mut input: &'a BitSlice<u8, Msb0>, _ctx: ()) -> Result<(&'a BitSlice<u8, Msb0>, Self), DekuError>
+    where
+        Self: Sized,
+    {
         let mut pointer_chase_limit: i32 = 10;
         let mut decoded = Vec::new();
         loop {
@@ -164,9 +165,6 @@ pub enum NameCmp {
     Different,
 }
 
-
-
-
 #[derive(Debug, PartialEq, DekuRead, DekuWrite)]
 struct RegularMsg1<'a> {
     length: u8,
@@ -186,9 +184,9 @@ enum Label<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    use std::vec::Vec;
+
     use deku::bitvec::BitView;
+    use std::vec::Vec;
 
     #[test]
     fn test_regular_msg1() {
@@ -238,7 +236,6 @@ mod tests {
 
 type DNSNameCtx = (Endian, usize, CompressedRef);
 pub type DNSNameCtxRtype = (Endian, usize, CompressedRef, RType);
-
 
 #[cfg(test)]
 mod domain_tests {
