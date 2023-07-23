@@ -7,9 +7,19 @@ use deku::{
     bitvec::{BitSlice, BitVec}, DekuRead, DekuWrite,
 };
 use std::{future::Future, sync::Arc};
+use std::sync::Mutex;
 use tokio::task::spawn_blocking;
+use crate::kv::KvStore;
 
-fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
+
+#[derive(Clone)]
+pub struct AppData {
+    pub records: Arc<Records>,
+    pub kv: Arc<Mutex<KvStore>>
+}
+fn handle_dns_packet1(ad: AppData, data: &[u8], tcp: bool) -> Vec<u8> {
+    let _records = ad.records;
+    let kv = ad.kv;
     // Parse the DNS question from the packet
     let bitslice = BitSlice::from_slice(data);
 
@@ -31,8 +41,9 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
 
     println!("{dns_question:?}");
 
-    let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question, records, tcp);
+    // let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question, &records, tcp);
 
+    let mut response = kv.lock().unwrap().build_response(dns_question.header.id, dns_question.question, tcp);
     let mut bitvec = BitVec::new();
     response.write(&mut bitvec, tcp).unwrap();
 
@@ -64,11 +75,11 @@ fn handle_dns_packet1(records: &Records, data: &[u8], tcp: bool) -> Vec<u8> {
 }
 
 pub async fn handle_dns_packet<F: FnOnce(Vec<u8>) -> T, T: Future<Output = std::io::Result<()>>>(
-    records: Arc<Records>,
+    records: AppData,
     data: Vec<u8>,
     tcp: bool,
     send_callback: F,
 ) -> std::io::Result<()> {
-    let res = spawn_blocking(move || handle_dns_packet1(&records, &data, tcp)).await.unwrap();
+    let res = spawn_blocking(move || handle_dns_packet1(records, &data, tcp)).await.unwrap();
     send_callback(res).await
 }

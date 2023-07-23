@@ -1,6 +1,8 @@
 use crate::nameserver::records::Records;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::net::UdpSocket;
+use crate::kv::KvStore;
+use crate::servers::shared::AppData;
 
 pub struct UdpServer {
     socket: Arc<UdpSocket>,
@@ -17,7 +19,10 @@ impl UdpServer {
 
         let mut buf = [0u8; 1024];
 
-        let records = Arc::new(Records::predefined());
+        let records = AppData {
+            records: Arc::new(Records::predefined()),
+            kv: Arc::new(Mutex::new(KvStore::default())),
+        };
 
         loop {
             let (size, addr) = self.socket.recv_from(&mut buf).await?;

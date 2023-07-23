@@ -12,6 +12,7 @@ pub struct Records {
     inner: Vec<DNSRecord>,
 }
 
+#[derive(Copy, Clone, Debug)]
 pub enum ResponseSection {
     Answer,
     Authority,
@@ -46,12 +47,10 @@ impl Records {
     pub fn query<'a>(&'a self, name: &'a DNSName, qtype: &'a RType) -> impl Iterator<Item = RecordItem<'a>> {
         self.map_matching(name).filter_map(move |(record, cmp)| {
             match cmp {
-                NameCmp::Equal | NameCmp::Subdomain if record.rtype == RType::NS => Some(RecordItem {
+                NameCmp::Equal | NameCmp::Subdomain | NameCmp::Superdomain if record.rtype == RType::NS => Some(RecordItem {
                     record,
                     section: ResponseSection::Authority,
                 }),
-                // We have record = NS example.com and name = www3.example.com
-                // cmp returns subdomain
                 NameCmp::Equal => {
                     if qtype == &record.rtype || record.rtype == RType::CNAME {
                         Some(RecordItem {

@@ -19,9 +19,9 @@ pub struct DNSRecord {
     pub(crate) name: DNSName,
     pub(crate) rtype: RType,
     #[deku(bits = "16")]
-    class: u16,
+    pub(crate) class: u16,
     #[deku(bits = "32")]
-    ttl: u32,
+    pub(crate) ttl: u32,
 
     #[deku(
         ctx = "deku::byte_offset, compressed.clone()",
@@ -32,12 +32,18 @@ pub struct DNSRecord {
 
 impl DekuWrite<CompressedRef> for DNSRecord {
     fn write(&self, output: &mut BitVec<u8, Msb0>, ctx: CompressedRef) -> Result<(), DekuError> {
-        let ctx1 = (Endian::Big, output.len(), ctx, self.rtype);
-        self.name.write(output, ctx1.clone())?;
-        self.rtype.write(output, ctx1.0)?;
-        self.class.write(output, ctx1.0)?;
-        self.ttl.write(output, ctx1.0)?;
-        self.rdata.write(output, ctx1)?;
+        let ctx_q = (Endian::Big, output.len(), ctx.clone(), self.rtype, true);
+
+        let ctx_a = if self.rtype == RType::TXT {
+            (Endian::Big, output.len(), ctx, self.rtype, false)
+        } else {
+            ctx_q.clone()
+        };
+        self.name.write(output, ctx_q.clone().into())?;
+        self.rtype.write(output, ctx_q.0)?;
+        self.class.write(output, ctx_q.0)?;
+        self.ttl.write(output, ctx_q.0)?;
+        self.rdata.write(output, ctx_a.into())?;
         Ok(())
     }
 }

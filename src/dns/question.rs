@@ -9,7 +9,7 @@ use crate::dns::{compression::CompressedRef, header::DNSHeader, name::DNSName, r
 #[deku(endian = "big", ctx = "compressed: CompressedRef")]
 pub struct DNSQuestion {
     #[deku(reader = "DNSName::read(deku::input_bits, (Endian::Big, deku::byte_offset, compressed))")]
-    #[deku(writer = "DNSName::write(&self.qname, deku::output, (Endian::Big, deku::byte_offset, compressed, self.qtype))")]
+    #[deku(writer = "DNSName::write(&self.qname, deku::output, (Endian::Big, deku::byte_offset, compressed, self.qtype, true).into())")]
     pub(crate) qname: DNSName,
     pub(crate) qtype: RType,
     #[deku(bits = "16")]

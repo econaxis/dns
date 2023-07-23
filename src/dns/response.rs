@@ -60,7 +60,7 @@ impl Response {
         Response::new(id, question, Vec::new(), Vec::new(), Vec::new(), tcp, rcode)
     }
 
-    fn new(
+    pub(crate) fn new(
         id: u16,
         question: DNSQuestion,
         answer: Vec<DNSRecord>,

@@ -7,7 +7,13 @@ use deku::{
 use std::{borrow::Borrow, cmp::Ordering, io::Write, ops::Deref};
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
-pub struct DNSName(Vec<String>);
+pub struct DNSName(pub Vec<String>);
+
+impl ToString for DNSName {
+    fn to_string(&self) -> String {
+        self.0.join(".")
+    }
+}
 
 impl DNSName {
     pub(crate) fn from_url(s: &str) -> Self {
@@ -82,11 +88,11 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
             let label_bytes = label.as_bytes();
             let label_len = label_bytes.len() as u8;
 
-            if ctx.3.supports_compression() {
-                if let Some(ptrindex) = ctx.2.query(self, index) {
+            if ctx.rtype.supports_compression() {
+                if let Some(ptrindex) = ctx.compression.query(self, index) {
                     let msg = Label::Pointer(ptrindex as u16);
                     msg.write(output, ())?;
-                    println!("Pointer {} write at index {}", ptrindex, ctx.1);
+                    println!("Pointer {} write at index {}", ptrindex, ctx.offset);
                     return Ok(());
                 }
             }
@@ -97,12 +103,12 @@ impl DekuWrite<DNSNameCtxRtype> for DNSName {
             msg.write(output, ())?;
         }
 
-        if self.0.last().map_or(true, |a| !a.is_empty()) {
+        if ctx.is_domain && self.0.last().map_or(true, |a| !a.is_empty()) {
             output.write_all(&[0]).unwrap();
         }
 
-        if ctx.3.supports_compression() {
-            ctx.2.add(self.clone(), ctx.1);
+        if ctx.rtype.supports_compression() {
+            ctx.compression.add(self.clone(), ctx.offset);
         }
         Ok(())
     }
@@ -235,7 +241,30 @@ mod tests {
 }
 
 type DNSNameCtx = (Endian, usize, CompressedRef);
-pub type DNSNameCtxRtype = (Endian, usize, CompressedRef, RType);
+// pub type DNSNameCtxRtype = (Endian, usize, CompressedRef, RType);
+
+// Convert DNSNameCtxRtype to a struct with appropriate new method
+impl DNSNameCtxRtype {
+    pub fn new(endian: Endian, offset: usize, compression: CompressedRef, rtype: RType, is_domain: bool) -> Self {
+        Self {endian, offset, compression, rtype, is_domain}
+    }
+}
+
+// Implement from tuple
+impl From<(Endian, usize, CompressedRef, RType, bool)> for DNSNameCtxRtype {
+    fn from(tuple: (Endian, usize, CompressedRef, RType, bool)) -> Self {
+        Self::new(tuple.0, tuple.1, tuple.2, tuple.3, tuple.4)
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub struct DNSNameCtxRtype {
+    pub endian: Endian,
+    pub offset: usize,
+    pub compression: CompressedRef,
+    pub rtype: RType,
+    pub is_domain: bool,
+}
 
 #[cfg(test)]
 mod domain_tests {

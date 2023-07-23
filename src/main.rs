@@ -7,6 +7,7 @@ mod nameserver;
 mod dns;
 mod servers;
 mod utils;
+mod kv;
 
 use servers::{tcp::TcpServer, udp::UdpServer};
 use std::error::Error;

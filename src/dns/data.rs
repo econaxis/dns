@@ -10,18 +10,20 @@ use deku::{
     ctx::Endian,
     DekuError, DekuRead, DekuWrite,
 };
+use crate::dns::text::DNSText;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RData {
     Vec(Vec<u8>),
     Name(DNSName),
+    Text(DNSText)
 }
 
 impl RData {
     pub fn try_get_name(&self) -> Option<&DNSName> {
         match self {
             RData::Name(name) => Some(name),
-            RData::Vec(_) => None,
+            _ => None
         }
     }
 }
@@ -31,15 +33,18 @@ impl DekuWrite<DNSNameCtxRtype> for RData {
         let mut output_data = BitVec::new();
         match self {
             RData::Vec(vec) => {
-                vec.write(&mut output_data, ctx.0)?;
+                vec.write(&mut output_data, ctx.endian)?;
             }
             RData::Name(name) => {
                 name.write(&mut output_data, ctx.clone())?;
             }
+            RData::Text(text) => {
+                text.write(&mut output_data, ctx.clone())?;
+            }
         }
 
         let bytes_written = u16::try_from(output_data.len() / 8).unwrap();
-        bytes_written.write(output, ctx.0)?;
+        bytes_written.write(output, ctx.endian)?;
 
         output.append(&mut output_data);
 
