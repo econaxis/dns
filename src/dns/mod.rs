@@ -7,3 +7,4 @@ pub(crate) mod record;
 pub(crate) mod response;
 pub(crate) mod rtypes;
 pub mod text;
+mod builders;

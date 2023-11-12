@@ -107,7 +107,7 @@ pub struct DNSHeader {
     #[deku(bits = "3")]
     z: u8,
     #[deku(endian = "")]
-    rcode: Rcode,
+    pub rcode: Rcode,
     #[deku(bits = "16")]
     qdcount: u16,
     #[deku(bits = "16")]

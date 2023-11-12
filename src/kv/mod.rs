@@ -1,4 +1,19 @@
-// DNS KV store
+mod ip;
+mod ip1;
+pub use ip::IPRouter;
+
+/// DNS KV store
+/// Usage:
+///
+/// dig {key}.{value} @localhost to insert a key/value pair
+/// For example, dig foo.bar @localhost
+///
+/// dig {key} @localhost to retrieve a value
+/// For example, dig foo @localhost will return a TXT record with "bar" as the content
+///
+/// This doesn't support "." in any key or value pair.
+/// TODO: how to support binary strings as values?
+/// Encode as base64
 
 
 use std::collections::HashMap;
@@ -28,6 +43,9 @@ pub struct OwnedRecordItem {
 }
 
 impl OwnedRecordItem {
+    pub fn empty(id: u16, question: DNSQuestion, tcp: bool) -> Response {
+        Self::build_response(&[], id, question, tcp)
+    }
     pub fn build_response(list: &[Self], id: u16, question: DNSQuestion, tcp: bool) -> Response {
         let mut answer = Vec::new();
         let mut authority = Vec::new();
@@ -85,10 +103,10 @@ impl KvStore {
                     section: ResponseSection::Answer,
                 }).map(|x| answer.push(x));
             }
-            _ => {}
+            _ => {
+                // By sending an empty `answer`, automatically sends NXDOMAIN
+            }
         };
-        
-
         println!("Query get: {:?}", &answer);
 
         answer
@@ -97,7 +115,7 @@ impl KvStore {
     fn build_response_internal(&mut self, id: u16, question: DNSQuestion, tcp: bool) -> anyhow::Result<Response> {
         let answer = match question.qname.len() {
             1 => {
-                // Read record
+                // Read record (dig {key} @localhost)
                 if question.qname.len() != 1 {
                     return Err(anyhow::anyhow!("Invalid query: {:?}", question.qname));
                 }
@@ -109,6 +127,7 @@ impl KvStore {
 
             2 => {
                 // Write record
+                // dig {key}.{value} @localhost
                 if question.qname.len() != 2 {
                     return Err(anyhow::anyhow!("Invalid query: {:?}", question.qname));
                 }

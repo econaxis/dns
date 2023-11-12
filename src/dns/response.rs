@@ -30,6 +30,9 @@ pub struct Response {
 }
 
 impl Response {
+    pub fn set_return_code(&mut self, error: Rcode) {
+        self.header.rcode = error;
+    }
     pub(crate) fn clear(&self) {
         self.compress.clear();
     }

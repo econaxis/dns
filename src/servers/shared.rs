@@ -1,5 +1,6 @@
 use crate::{
     dns::{header::Rcode, question::Question, response::Response, rtypes::RType},
+    kv::IPRouter,
     nameserver::records::Records,
     utils::bv_to_vec,
 };
@@ -42,8 +43,9 @@ fn handle_dns_packet1(ad: AppData, data: &[u8], tcp: bool) -> Vec<u8> {
     println!("{dns_question:?}");
 
     // let mut response = Response::build_from_record_iter(dns_question.header.id, dns_question.question, &records, tcp);
-
-    let mut response = kv.lock().unwrap().build_response(dns_question.header.id, dns_question.question, tcp);
+    let mut ip = IPRouter{};
+    // let mut response = kv.lock().unwrap().build_response(dns_question.header.id, dns_question.question, tcp);
+    let mut response = ip.build_response(dns_question.header.id, dns_question.question, tcp);
     let mut bitvec = BitVec::new();
     response.write(&mut bitvec, tcp).unwrap();
 
